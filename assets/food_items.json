@@ -1,0 +1,26 @@
+[
+  {
+    "id": "food_01",
+    "name": "Rice",
+    "image": "assets/rice.jpg",
+    "category": "Staple"
+  },
+  {
+    "id": "food_02",
+    "name": "Roti",
+    "image": "assets/roti.jpg",
+    "category": "Staple"
+  },
+  {
+    "id": "food_03",
+    "name": "Dal",
+    "image": "assets/dal.jpg",
+    "category": "Staple"
+  },
+  {
+    "id": "food_04",
+    "name": "Sabzi",
+    "image": "assets/dal.jpg",
+    "category": "Staple"
+  }
+]
