@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'role_selection.dart';
 import 'role_selection_login.dart';
-import 'admin/admin_login_page.dart'; // ✅ open admin login, not dashboard
+import 'admin/admin_login_page.dart';
+import 'ngo/ngo_home.dart';
+import 'restaurant/restaurant_home.dart';
+import 'pending_approval.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,11 +20,80 @@ class _SplashScreenState extends State<SplashScreen> {
   int _adminTapCount = 0;
   DateTime? _firstTapTime;
 
+  @override
+  void initState() {
+    super.initState();
+    _checkUserStatus();
+  }
+
+  // ✅ Check user login + approval status
+  Future<void> _checkUserStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return; // stay on splash if logged out
+
+    try {
+      // Determine role by checking collections
+      final ngoDoc = await FirebaseFirestore.instance
+          .collection('ngos')
+          .doc(user.uid)
+          .get();
+      final restaurantDoc = await FirebaseFirestore.instance
+          .collection('restaurants')
+          .doc(user.uid)
+          .get();
+
+      // NGO
+      if (ngoDoc.exists) {
+        final isApproved = ngoDoc.data()?['isApproved'] ?? false;
+        if (isApproved) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const NgoHomePage()),
+            );
+          }
+        } else {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const PendingApprovalPage()),
+            );
+          }
+        }
+        return;
+      }
+
+      // RESTAURANT
+      if (restaurantDoc.exists) {
+        final isApproved = restaurantDoc.data()?['isApproved'] ?? false;
+        if (isApproved) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const RestaurantHomePage()),
+            );
+          }
+        } else {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const PendingApprovalPage()),
+            );
+          }
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint("Error checking user status: $e");
+    }
+  }
+
   void _handleAdminTap() {
     final now = DateTime.now();
 
-    // Reset counter if more than 3 seconds passed between taps
-    if (_firstTapTime == null || now.difference(_firstTapTime!) > const Duration(seconds: 3)) {
+    if (_firstTapTime == null ||
+        now.difference(_firstTapTime!) > const Duration(seconds: 3)) {
       _firstTapTime = now;
       _adminTapCount = 1;
     } else {
@@ -26,13 +101,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (_adminTapCount >= 7) {
-      _adminTapCount = 0; // reset counter
+      _adminTapCount = 0;
       _firstTapTime = null;
-
-      // Navigate securely to Admin Login Page
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const AdminLoginPage()),
+        MaterialPageRoute(builder: (_) => const AdminLoginPage()),
       );
     }
   }
@@ -45,8 +118,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-
-            // 👇 Hidden admin trigger (tap the logo 7 times)
             GestureDetector(
               onTap: _handleAdminTap,
               child: Row(
@@ -71,9 +142,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 12),
-
             const Text(
               "Nourish Communities,\nNot Landfills.",
               textAlign: TextAlign.center,
@@ -83,30 +152,19 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Colors.black87,
               ),
             ),
-
             const SizedBox(height: 20),
-
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Image.asset(
-                  "assets/tree.png",
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset("assets/tree.png", fit: BoxFit.contain),
               ),
             ),
-
             const Text(
               "Connecting Restaurants & NGOs\n to Share Surplus Food",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.black54),
             ),
-
             const SizedBox(height: 30),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
@@ -118,7 +176,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const RoleSelectionPage(),
+                            builder: (_) => const RoleSelectionPage(),
                           ),
                         );
                       },
@@ -143,7 +201,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const RoleSelectionLoginPage(),
+                            builder: (_) => const RoleSelectionLoginPage(),
                           ),
                         );
                       },
@@ -164,7 +222,6 @@ class _SplashScreenState extends State<SplashScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
           ],
         ),

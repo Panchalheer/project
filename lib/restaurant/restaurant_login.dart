@@ -210,31 +210,7 @@ class _RestaurantLoginPageState extends State<RestaurantLoginPage> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Sign In"),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: const [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text("OR"),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton(
-                onPressed: () {
-                  // TODO: implement Google Sign-In if needed
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Text("Continue with Google"),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
               Center(
                 child: GestureDetector(
                   onTap: () {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'ngo_login.dart'; // ✅ import NGO login screen
 
 class NGOProfilePage extends StatefulWidget {
   const NGOProfilePage({super.key});
@@ -12,7 +13,7 @@ class NGOProfilePage extends StatefulWidget {
 class _NGOProfilePageState extends State<NGOProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _orgNameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _regNumberController = TextEditingController();
   final _addressController = TextEditingController();
   final _contactPersonController = TextEditingController();
@@ -28,7 +29,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
 
   @override
   void dispose() {
-    _orgNameController.dispose();
+    _nameController.dispose();
     _regNumberController.dispose();
     _addressController.dispose();
     _contactPersonController.dispose();
@@ -41,10 +42,11 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
 
   Future<void> _loadData() async {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final doc = await FirebaseFirestore.instance.collection('ngos').doc(uid).get();
+    final doc =
+    await FirebaseFirestore.instance.collection('ngos').doc(uid).get();
 
     final data = doc.data() ?? {};
-    _orgNameController.text = data['orgName'] ?? '';
+    _nameController.text = data['name'] ?? '';
     _regNumberController.text = data['regNumber'] ?? '';
     _addressController.text = data['address'] ?? '';
     _contactPersonController.text = data['contactPerson'] ?? '';
@@ -53,10 +55,9 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
     _phoneController.text = data['phone'] ?? '';
     _yearController.text = data['year'] ?? '';
 
-    // ✅ Initial Letter Logic
     setState(() {
-      if (_orgNameController.text.isNotEmpty) {
-        _initialLetter = _orgNameController.text[0].toUpperCase();
+      if (_nameController.text.isNotEmpty) {
+        _initialLetter = _nameController.text[0].toUpperCase();
       } else if (_emailController.text.isNotEmpty) {
         _initialLetter = _emailController.text[0].toUpperCase();
       } else {
@@ -71,7 +72,8 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Save Changes?"),
-        content: const Text("Do you want to save your updated profile details?"),
+        content:
+        const Text("Do you want to save your updated profile details?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -86,9 +88,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
       ),
     );
 
-    if (confirm == true) {
-      await _saveData();
-    }
+    if (confirm == true) await _saveData();
   }
 
   Future<void> _confirmDiscard() async {
@@ -96,7 +96,8 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Discard Changes?"),
-        content: const Text("You have unsaved changes. Do you really want to discard them?"),
+        content: const Text(
+            "You have unsaved changes. Do you really want to discard them?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -126,7 +127,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     await FirebaseFirestore.instance.collection('ngos').doc(uid).set({
-      'orgName': _orgNameController.text.trim(),
+      'name': _nameController.text.trim(),
       'regNumber': _regNumberController.text.trim(),
       'address': _addressController.text.trim(),
       'contactPerson': _contactPersonController.text.trim(),
@@ -140,8 +141,8 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
       _loading = false;
       _isEditing = false;
       _hasChanges = false;
-      _initialLetter = _orgNameController.text.isNotEmpty
-          ? _orgNameController.text[0].toUpperCase()
+      _initialLetter = _nameController.text.isNotEmpty
+          ? _nameController.text[0].toUpperCase()
           : (_emailController.text.isNotEmpty
           ? _emailController.text[0].toUpperCase()
           : "U");
@@ -159,19 +160,19 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
     super.initState();
     _loadData();
 
-    _orgNameController.addListener(() => setState(() => _hasChanges = true));
+    _nameController.addListener(() => setState(() => _hasChanges = true));
     _regNumberController.addListener(() => setState(() => _hasChanges = true));
     _addressController.addListener(() => setState(() => _hasChanges = true));
-    _contactPersonController.addListener(() => setState(() => _hasChanges = true));
-    _fatherNameController.addListener(() => setState(() => _hasChanges = true));
+    _contactPersonController
+        .addListener(() => setState(() => _hasChanges = true));
+    _fatherNameController
+        .addListener(() => setState(() => _hasChanges = true));
     _phoneController.addListener(() => setState(() => _hasChanges = true));
     _yearController.addListener(() => setState(() => _hasChanges = true));
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser!;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("My Profile"),
@@ -212,7 +213,6 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ✅ Big Profile Icon in Profile Page
               CircleAvatar(
                 radius: 40,
                 backgroundColor: Colors.green,
@@ -227,7 +227,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
               ),
               const SizedBox(height: 20),
 
-              _buildTextField("Organization Name", _orgNameController),
+              _buildTextField("Organization Name", _nameController),
               const SizedBox(height: 12),
               _buildTextField("Registration Number", _regNumberController),
               const SizedBox(height: 12),
@@ -264,9 +264,9 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
                         fontWeight: FontWeight.bold),
                   ),
                 ),
-
               const SizedBox(height: 20),
 
+              // ✅ FIXED LOGOUT — clears navigation stack and goes to NGO login
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -278,15 +278,20 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
                 ),
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
-                  if (context.mounted) {
-                    Navigator.pushReplacementNamed(
-                        context, '/ngoLogin');
-                  }
+                  if (!mounted) return;
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const NGOLoginPage()),
+                        (Route<dynamic> route) => false,
+                  );
                 },
                 icon: const Icon(Icons.logout, color: Colors.white),
                 label: const Text(
                   "Logout",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style:
+                  TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ],
@@ -296,16 +301,30 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
     );
   }
 
+  // ✅ FIXED text field appearance for visibility and polish
   Widget _buildTextField(String label, TextEditingController controller,
       {bool readOnly = false}) {
     return TextFormField(
       controller: controller,
       readOnly: !_isEditing || readOnly,
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 16,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        labelStyle: const TextStyle(color: Colors.black87),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.green, width: 2),
+          borderRadius: BorderRadius.circular(12),
+        ),
         filled: true,
-        fillColor: Colors.green.shade50,
+        fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {

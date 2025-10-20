@@ -1,9 +1,9 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; // ✅ added
 
 import 'firebase_options.dart';
 import 'splash_screen.dart';
@@ -31,8 +31,14 @@ import 'admin/admin_setup_page.dart';
 // Settings page
 import 'settings/settings_page.dart';
 
-/// 🌙 This controls light/dark theme across the whole app dynamically.
+/// 🌙 Global theme controller
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
+/// ✅ Background message handler (required for FCM)
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("🔔 Background message received: ${message.notification?.title}");
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +46,27 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ✅ Load saved theme preference from SharedPreferences
+  // ✅ Initialize Firebase Messaging
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // ✅ Request notification permissions (for iOS/web)
+  await messaging.requestPermission();
+
+  // ✅ Handle background messages
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // ✅ Get and print device token
+  String? token = await messaging.getToken();
+  debugPrint("📱 FCM Token: $token");
+
+  // ✅ Optional: Save token to Firestore if logged in NGO
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await FirebaseFirestore.instance.collection('ngos').doc(user.uid).set({
+      'token': token,
+    }, SetOptions(merge: true));
+  }
+
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkMode') ?? false;
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
@@ -60,49 +86,70 @@ class ZeroWasteApp extends StatelessWidget {
           title: 'ZeroWaste',
           debugShowCheckedModeBanner: false,
           themeMode: mode,
+
+          // ☀ LIGHT THEME
           theme: ThemeData(
-            primarySwatch: Colors.green,
             brightness: Brightness.light,
+            primaryColor: Colors.green,
             scaffoldBackgroundColor: Colors.white,
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
               elevation: 2,
             ),
+            cardColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.green),
+            textTheme: const TextTheme(
+              bodyMedium: TextStyle(color: Colors.black),
+            ),
+            switchTheme: SwitchThemeData(
+              thumbColor: MaterialStateProperty.all(Colors.green),
+              trackColor: MaterialStateProperty.all(Colors.greenAccent),
+            ),
           ),
+
+          // 🌙 DARK THEME
           darkTheme: ThemeData(
-            primarySwatch: Colors.green,
             brightness: Brightness.dark,
+            scaffoldBackgroundColor: Colors.black,
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.black,
+              backgroundColor: Color(0xFF121212),
               foregroundColor: Colors.white,
               elevation: 2,
             ),
+            cardColor: const Color(0xFF1E1E1E),
+            iconTheme: const IconThemeData(color: Colors.tealAccent),
+            textTheme: const TextTheme(
+              bodyMedium: TextStyle(color: Colors.white),
+            ),
+            switchTheme: SwitchThemeData(
+              thumbColor: MaterialStateProperty.all(Colors.tealAccent),
+              trackColor: MaterialStateProperty.all(Colors.teal),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.tealAccent,
+                foregroundColor: Colors.black,
+              ),
+            ),
           ),
+
           initialRoute: '/',
           routes: {
             '/': (context) => const AuthGate(),
-
-            // 🔑 Admin
             '/adminLogin': (context) => AdminLoginPage(),
             '/adminDashboard': (context) => const AdminDashboardPage(),
             '/adminSetup': (context) => const AdminSetupPage(),
-
-            // NGO
             '/ngoHome': (context) => const NgoHomePage(),
             '/ngoLogin': (context) => NGOLoginPage(),
             '/ngoRegister': (context) => NGORegistrationPage(),
             '/ngoProfile': (context) => const NGOProfilePage(),
-
-            // Restaurant
             '/restaurantHome': (context) => const RestaurantHomePage(),
             '/restaurantLogin': (context) => RestaurantLoginPage(),
             '/restaurantRegister': (context) => RestaurantRegistrationPage(),
             '/postFood': (context) => const PostFoodPage(),
             '/myPosts': (context) => const MyPostsPage(),
             '/restaurantProfile': (context) => RestaurantProfilePage(),
-
-            // ⚙ Settings
             '/settings': (context) => const SettingsPage(),
           },
         );
@@ -111,7 +158,6 @@ class ZeroWasteApp extends StatelessWidget {
   }
 }
 
-/// AuthGate decides which UI to show based on Firebase Auth + Firestore role
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 

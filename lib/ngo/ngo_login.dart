@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'ngo_registration.dart';
@@ -22,60 +21,6 @@ class _NGOLoginPageState extends State<NGOLoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId:
-    "424444605086-96fjj9qqdp3io78r9hebtmkn209ma6ll.apps.googleusercontent.com",
-  );
-
-  // ✅ Google Sign-in
-  Future<void> _signInWithGoogle() async {
-    try {
-      setState(() => _isLoading = true);
-
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCred =
-      await FirebaseAuth.instance.signInWithCredential(credential);
-
-      final doc = await FirebaseFirestore.instance
-          .collection('ngos')
-          .doc(userCred.user!.uid)
-          .get();
-
-      if (doc.exists && doc['status'] == 'Approved') {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const NgoHomePage()),
-              (Route<dynamic> route) => false,
-        );
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const PendingApprovalPage()),
-              (Route<dynamic> route) => false,
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Google Sign-In failed: $e")),
-      );
-    }
-
-    setState(() => _isLoading = false);
-  }
-
   // ✅ Email/Password Login
   Future<void> _loginNGO() async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
@@ -90,8 +35,9 @@ class _NGOLoginPageState extends State<NGOLoginPage> {
     try {
       final userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim());
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
       final uid = userCredential.user!.uid;
       final doc =
@@ -227,28 +173,7 @@ class _NGOLoginPageState extends State<NGOLoginPage> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Sign In"),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: const [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text("OR"),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton(
-                onPressed: _isLoading ? null : _signInWithGoogle,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                child: const Text("Continue with Google"),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
               Center(
                 child: GestureDetector(
                   onTap: () {

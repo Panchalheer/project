@@ -3,9 +3,65 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
-class NgoDashboardPage extends StatelessWidget {
+class NgoDashboardPage extends StatefulWidget {
   const NgoDashboardPage({super.key});
+
+  @override
+  State<NgoDashboardPage> createState() => _NgoDashboardPageState();
+}
+
+class _NgoDashboardPageState extends State<NgoDashboardPage> {
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _initFCM();
+  }
+
+  // 🔹 Initialize FCM and Save Token to Firestore
+  Future<void> _initFCM() async {
+    try {
+      // Request notification permission
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        // Get FCM token
+        String? token = await _messaging.getToken();
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (user != null && token != null) {
+          await FirebaseFirestore.instance
+              .collection('ngo')
+              .doc(user.uid)
+              .update({'fcmToken': token});
+        }
+
+        // Listen for foreground messages
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          final notification = message.notification;
+          if (notification != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(notification.title ?? "New Notification"),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        });
+      } else {
+        debugPrint("❌ Notification permission not granted.");
+      }
+    } catch (e) {
+      debugPrint("🔥 FCM Init Error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,16 +151,14 @@ class NgoDashboardPage extends StatelessWidget {
       };
     }
 
-    // 1️⃣ Top Donor (with fallback)
+    // 1️⃣ Top Donor
     final Map<String, int> donorCounts = {};
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
-
       final donor = (data["restaurantName"] != null &&
           data["restaurantName"].toString().trim().isNotEmpty)
           ? data["restaurantName"]
           : data["restaurantId"] ?? "Unknown";
-
       donorCounts[donor] = (donorCounts[donor] ?? 0) + 1;
     }
     String topDonor = donorCounts.isNotEmpty
@@ -153,21 +207,18 @@ class NgoDashboardPage extends StatelessWidget {
     };
   }
 
-  // 🔹 Helper: Update Listing Status
+  // 🔹 Update Listing Status
   Future<void> updateListingStatus(String listingId, String newStatus) async {
     final ngoId = FirebaseAuth.instance.currentUser?.uid;
     if (ngoId == null) return;
 
-    await FirebaseFirestore.instance
-        .collection("listings")
-        .doc(listingId)
-        .update({
+    await FirebaseFirestore.instance.collection("listings").doc(listingId).update({
       "status": newStatus,
       "ngoId": ngoId,
     });
   }
 
-  // 🔹 Gradient Stat Card Widget
+  // 🔹 Stat Card Widget
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Card(
@@ -211,7 +262,7 @@ class NgoDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Section Title with icon
+  // 🔹 Section Title
   Widget _buildSectionTitle(String title, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -232,7 +283,7 @@ class NgoDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Listings Stream Widget
+  // 🔹 Listings Stream
   Widget _buildListingsStream({required String status, bool allowRequest = false}) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance

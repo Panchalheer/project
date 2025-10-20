@@ -155,9 +155,9 @@ class _NgoHomePageState extends State<NgoHomePage> {
                 String initial = "U";
 
                 if (data != null &&
-                    data["orgName"] != null &&
-                    data["orgName"].toString().isNotEmpty) {
-                  initial = data["orgName"][0].toUpperCase();
+                    data["name"] != null &&
+                    data["name"].toString().isNotEmpty) {
+                  initial = data["name"][0].toUpperCase();
                 } else if (FirebaseAuth.instance.currentUser!.email != null &&
                     FirebaseAuth.instance.currentUser!.email!.isNotEmpty) {
                   initial =

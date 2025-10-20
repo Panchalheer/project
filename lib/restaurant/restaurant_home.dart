@@ -28,20 +28,28 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
   Widget build(BuildContext context) {
     final String uid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
+    // ✅ Pull colors dynamically from the current theme
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 3,
       initialIndex: _currentIndex,
       child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+
         appBar: AppBar(
           elevation: 2,
-          backgroundColor: Colors.white,
+          backgroundColor: theme.appBarTheme.backgroundColor,
+          foregroundColor: theme.appBarTheme.foregroundColor,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "ZeroWaste",
                 style: GoogleFonts.poppins(
-                  color: Colors.black,
+                  color: theme.textTheme.bodyMedium?.color,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -50,15 +58,16 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
                 "Reduce Food Waste, Save the Planet 🌍",
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: Colors.black54,
+                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
                 ),
               ),
             ],
           ),
+
           actions: [
             // ⚙ Settings Button
             IconButton(
-              icon: const Icon(Icons.settings, color: Colors.black87),
+              icon: Icon(Icons.settings, color: theme.iconTheme.color),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -69,11 +78,12 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
 
             // 🔔 Notifications Button
             IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.black87),
+              icon: Icon(Icons.notifications, color: theme.iconTheme.color),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('🔔 Notifications are automatically received!'),
+                    content:
+                    Text('🔔 Notifications are automatically received!'),
                   ),
                 );
               },
@@ -109,7 +119,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
                     },
                     child: CircleAvatar(
                       radius: 16,
-                      backgroundColor: Colors.green,
+                      backgroundColor: colorScheme.primary,
                       child: Text(
                         initial,
                         style: const TextStyle(
@@ -123,13 +133,17 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
               },
             ),
           ],
+
           bottom: TabBar(
             indicator: BoxDecoration(
-              color: Colors.green.shade100,
+              color: isDark
+                  ? colorScheme.primary.withOpacity(0.2)
+                  : colorScheme.primary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(25),
             ),
-            labelColor: Colors.green,
-            unselectedLabelColor: Colors.black54,
+            labelColor: colorScheme.primary,
+            unselectedLabelColor: theme.textTheme.bodyMedium?.color
+                ?.withOpacity(isDark ? 0.7 : 0.6),
             labelStyle: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
             ),
@@ -154,13 +168,15 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
           ],
         ),
 
-        // 🌟 Floating SpeedDial FAB (bottom-right instead of docked)
+        // 🌟 Floating SpeedDial FAB
         floatingActionButton: SpeedDial(
-          backgroundColor: Colors.green,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: Colors.white,
           icon: Icons.add,
           activeIcon: Icons.close,
           children: [
             SpeedDialChild(
+              backgroundColor: colorScheme.secondaryContainer,
               child: const Icon(Icons.fastfood),
               label: 'Add Listing',
               onTap: () => Navigator.push(
@@ -169,6 +185,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
               ),
             ),
             SpeedDialChild(
+              backgroundColor: colorScheme.secondaryContainer,
               child: const Icon(Icons.bar_chart),
               label: 'Analytics',
               onTap: () {
