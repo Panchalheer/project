@@ -16,7 +16,7 @@ class RestaurantDashboardPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Dynamic Stats Section
+            // 🔹 Stats Section
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: FutureBuilder<Map<String, dynamic>>(
@@ -25,24 +25,28 @@ class RestaurantDashboardPage extends StatelessWidget {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   final stats = snapshot.data!;
-
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStatCard(
-                          "Donation Streak",
-                          "${stats['donationStreak']} Days",
-                          Icons.local_fire_department,
-                          Colors.red),
-                      _buildStatCard("Top Donated",
-                          stats['topDonated'] ?? "N/A", Icons.fastfood, Colors.orange),
+                        "Donation Streak",
+                        "${stats['donationStreak']} Days",
+                        Icons.local_fire_department,
+                        Colors.red,
+                      ),
                       _buildStatCard(
-                          "NGOs Served",
-                          "${stats['ngosServed']}",
-                          Icons.volunteer_activism,
-                          Colors.green),
+                        "Top Donated",
+                        stats['topDonated'] ?? "N/A",
+                        Icons.fastfood,
+                        Colors.orange,
+                      ),
+                      _buildStatCard(
+                        "NGOs Served",
+                        "${stats['ngosServed']}",
+                        Icons.volunteer_activism,
+                        Colors.green,
+                      ),
                     ],
                   );
                 },
@@ -53,7 +57,7 @@ class RestaurantDashboardPage extends StatelessWidget {
             _buildListingsStream(uid: uid, status: "Active"),
 
             _buildSectionTitle("Pending Requests", Icons.hourglass_top, Colors.orange),
-            _buildListingsStream(uid: uid, status: "Pending", allowComplete: true),
+            _buildPendingRequestsStream(uid),
 
             _buildSectionTitle("Completed Donations", Icons.done_all, Colors.blue),
             _buildListingsStream(uid: uid, status: "Completed"),
@@ -63,7 +67,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Fetch Stats Dynamically
+  // 🔹 Stats Calculation
   Future<Map<String, dynamic>> _fetchDashboardStats(String uid) async {
     final snapshot = await FirebaseFirestore.instance
         .collection("listings")
@@ -80,7 +84,6 @@ class RestaurantDashboardPage extends StatelessWidget {
       };
     }
 
-    // 1️⃣ Donation Streak (unique days in a row)
     final dates = docs
         .map((d) => (d["createdAt"] as Timestamp).toDate())
         .toList()
@@ -96,17 +99,16 @@ class RestaurantDashboardPage extends StatelessWidget {
       }
     }
 
-    // 2️⃣ Top Donated Item
     final Map<String, int> itemCounts = {};
     for (var doc in docs) {
       final title = doc["title"] ?? "Unknown";
       itemCounts[title] = (itemCounts[title] ?? 0) + 1;
     }
+
     String topDonated = itemCounts.entries.isNotEmpty
         ? itemCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key
         : "N/A";
 
-    // 3️⃣ Unique NGOs Served
     final ngoIds = docs.map((d) => d["ngoId"]).toSet();
     int ngosServed = ngoIds.length;
 
@@ -117,7 +119,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     };
   }
 
-  // 🔹 Stat Card
+  // 🔹 Stat Card Widget
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Card(
@@ -137,18 +139,16 @@ class RestaurantDashboardPage extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.white, size: 28),
               const SizedBox(height: 8),
-              Text(value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  )),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  )),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70),
+              ),
             ],
           ),
         ),
@@ -156,7 +156,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Section Title
+  // 🔹 Section Title Widget
   Widget _buildSectionTitle(String title, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -177,16 +177,12 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Listings Stream (filtered by current restaurant)
-  Widget _buildListingsStream({
-    required String uid,
-    required String status,
-    bool allowComplete = false,
-  }) {
+  // 🔹 Regular Listings (Active/Completed)
+  Widget _buildListingsStream({required String uid, required String status}) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection("listings")
-          .where("restaurantId", isEqualTo: uid) // ✅ Only this restaurant’s listings
+          .where("restaurantId", isEqualTo: uid)
           .where("status", isEqualTo: status)
           .orderBy("createdAt", descending: true)
           .snapshots(),
@@ -201,9 +197,7 @@ class RestaurantDashboardPage extends StatelessWidget {
                 style: GoogleFonts.poppins(color: Colors.black54)),
           );
         }
-
         final listings = snapshot.data!.docs;
-
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -211,44 +205,23 @@ class RestaurantDashboardPage extends StatelessWidget {
           itemBuilder: (context, index) {
             final doc = listings[index];
             final data = doc.data() as Map<String, dynamic>;
-
+            final remaining = data['remainingQuantity'] ?? data['quantity'];
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 3,
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.orange.shade100,
                   child: const Icon(Icons.fastfood, color: Colors.orange),
                 ),
-                title: Text(
-                  data['title'] ?? "Food Item",
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                ),
+                title: Text(data['title'] ?? "Food Item",
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
                 subtitle: Text(
-                  "${data['quantity']} ${data['unit']} • ${data['location']}",
+                  "${data['quantity']} ${data['unit']} • ${data['location']} • Remaining: $remaining",
                   style: GoogleFonts.poppins(fontSize: 13),
                 ),
-                trailing: allowComplete
-                    ? ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () async {
-                    await FirebaseFirestore.instance
-                        .collection("listings")
-                        .doc(doc.id)
-                        .update({"status": "Completed"});
-                  },
-                  child: const Text("Complete"),
-                )
-                    : Chip(
+                trailing: Chip(
                   label: Text(
                     status,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -260,6 +233,123 @@ class RestaurantDashboardPage extends StatelessWidget {
                       : Colors.blue,
                 ),
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 🔹 Pending Requests (from subfield)
+  Widget _buildPendingRequestsStream(String uid) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("listings")
+          .where("restaurantId", isEqualTo: uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox();
+
+        final allDocs = snapshot.data!.docs;
+        final pendingDocs = allDocs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final pending = data["pendingRequests"];
+          if (pending == null) return false;
+          final pendingList = List<Map<String, dynamic>>.from(
+              (pending as List).map((e) => Map<String, dynamic>.from(e)));
+          return pendingList.any((r) => r['status'] != "Completed");
+        }).toList();
+
+        if (pendingDocs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text("No pending requests.",
+                style: GoogleFonts.poppins(color: Colors.black54)),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: pendingDocs.length,
+          itemBuilder: (context, index) {
+            final doc = pendingDocs[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final pendingList = List<Map<String, dynamic>>.from(
+                (data["pendingRequests"] ?? [])
+                    .map((e) => Map<String, dynamic>.from(e)));
+
+            final activeRequests =
+            pendingList.where((r) => r['status'] != "Completed").toList();
+
+            return Column(
+              children: activeRequests.map((req) {
+                return Card(
+                  margin:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 3,
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.orange.shade100,
+                      child: const Icon(Icons.volunteer_activism,
+                          color: Colors.orange),
+                    ),
+                    title: Text(
+                      "${req['ngoName']} requested ${req['requestedQuantity']} ${data['unit']}",
+                      style:
+                      GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(data['title'] ?? "Food Item",
+                        style: GoogleFonts.poppins(fontSize: 13)),
+                    trailing: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () async {
+                        final listingRef = FirebaseFirestore.instance
+                            .collection("listings")
+                            .doc(doc.id);
+
+                        final updatedRequests =
+                        List<Map<String, dynamic>>.from(pendingList);
+
+                        // 🔹 Mark this specific NGO request as completed
+                        final indexToUpdate = updatedRequests
+                            .indexWhere((r) => r['ngoId'] == req['ngoId']);
+                        if (indexToUpdate != -1) {
+                          updatedRequests[indexToUpdate]['status'] = "Completed";
+                        }
+
+                        // 🔹 Check if all requests are completed
+                        final allCompleted = updatedRequests
+                            .every((r) => r['status'] == "Completed");
+
+                        final remainingQty =
+                        (data['remainingQuantity'] ?? data['quantity']) as num;
+
+                        // 🔹 Determine new listing status
+                        final newStatus = (allCompleted && remainingQty <= 0)
+                            ? "Completed"
+                            : "Active";
+
+                        // 🔹 Clear pendingRequests if all are completed
+                        await listingRef.update({
+                          "pendingRequests": updatedRequests, // ← keep all, just update statuses
+                          "status": newStatus,
+                          "remainingQuantity": 0, // optional, only if fully picked up
+                        });
+
+                      },
+                      child: const Text("Complete"),
+                    ),
+                  ),
+                );
+              }).toList(),
             );
           },
         );

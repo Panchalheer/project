@@ -178,17 +178,6 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
         title: const Text("My Profile"),
         backgroundColor: Colors.green,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                _initialLetter ?? "U",
-                style: const TextStyle(
-                    color: Colors.green, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
           IconButton(
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
             onPressed: () {
@@ -266,7 +255,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
                 ),
               const SizedBox(height: 20),
 
-              // ✅ FIXED LOGOUT — clears navigation stack and goes to NGO login
+              // ✅ LOGOUT BUTTON
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -290,8 +279,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
                 icon: const Icon(Icons.logout, color: Colors.white),
                 label: const Text(
                   "Logout",
-                  style:
-                  TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ],
@@ -301,7 +289,7 @@ class _NGOProfilePageState extends State<NGOProfilePage> {
     );
   }
 
-  // ✅ FIXED text field appearance for visibility and polish
+  // ✅ Helper Text Field Builder
   Widget _buildTextField(String label, TextEditingController controller,
       {bool readOnly = false}) {
     return TextFormField(

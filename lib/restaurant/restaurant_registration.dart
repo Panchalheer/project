@@ -1,8 +1,29 @@
 import 'package:flutter/material.dart';
-import 'restaurant_login.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'restaurant_login.dart';
 import 'package:zero/pending_approval.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // ✅ Initialize Firebase
+  runApp(RestaurantApp());
+}
+
+class RestaurantApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Restaurant Registration',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+      ),
+      home: RestaurantRegistrationPage(),
+    );
+  }
+}
 
 class RestaurantRegistrationPage extends StatefulWidget {
   @override
@@ -13,21 +34,23 @@ class RestaurantRegistrationPage extends StatefulWidget {
 class _RestaurantRegistrationPageState
     extends State<RestaurantRegistrationPage> {
   final TextEditingController orgNameController = TextEditingController();
+  final TextEditingController fatherNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController fatherNameController = TextEditingController();
+  final TextEditingController licenseController = TextEditingController();
 
   bool isLoading = false;
 
   Future<void> _registerRestaurant() async {
     if (orgNameController.text.isEmpty ||
+        fatherNameController.text.isEmpty ||
         addressController.text.isEmpty ||
         cityController.text.isEmpty ||
         emailController.text.isEmpty ||
         passwordController.text.isEmpty ||
-        fatherNameController.text.isEmpty) {
+        licenseController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill in all fields")),
       );
@@ -37,40 +60,39 @@ class _RestaurantRegistrationPageState
     setState(() => isLoading = true);
 
     try {
-      // ✅ Create Firebase Auth user
+      // ✅ Create Firebase Auth User
       final userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      // ✅ Store data in Firestore with status = Pending + role = restaurant
+      // ✅ Store data in Firestore with Pending status
       await FirebaseFirestore.instance
           .collection('restaurants')
           .doc(userCredential.user!.uid)
           .set({
         'name': orgNameController.text.trim(),
+        'fatherName': fatherNameController.text.trim(),
         'address': addressController.text.trim(),
         'city': cityController.text.trim(),
-        'fatherName': fatherNameController.text.trim(),
         'email': emailController.text.trim(),
+        'licenseNumber': licenseController.text.trim(),
+        'status': 'Pending',
+        'role': 'restaurant',
         'createdAt': FieldValue.serverTimestamp(),
-        'status': 'Pending', // 👈 admin approval needed
-        'role': 'restaurant', // 👈 added role field
       });
 
-      // ✅ Sign out right after registration
+      // ✅ Sign out after registration
       await FirebaseAuth.instance.signOut();
 
-      // ✅ Navigate to “Pending Approval” page
+      // ✅ Navigate to Pending Approval Page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => PendingApprovalPage(),
-        ),
+        MaterialPageRoute(builder: (_) => PendingApprovalPage()),
       );
     } on FirebaseAuthException catch (e) {
-      String errorMsg = "Error: ${e.message}";
+      String errorMsg = e.message ?? "Something went wrong.";
       if (e.code == 'weak-password') {
         errorMsg = "Password should be at least 6 characters.";
       } else if (e.code == 'email-already-in-use') {
@@ -88,7 +110,6 @@ class _RestaurantRegistrationPageState
 
   @override
   Widget build(BuildContext context) {
-    // ⚠ UI is untouched
     return Scaffold(
       appBar: AppBar(
         title: Text("Register your Restaurant"),
@@ -156,6 +177,14 @@ class _RestaurantRegistrationPageState
                 obscureText: true,
                 decoration: InputDecoration(
                   labelText: "Password",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 15),
+              TextField(
+                controller: licenseController,
+                decoration: InputDecoration(
+                  labelText: "Restaurant License Number",
                   border: OutlineInputBorder(),
                 ),
               ),

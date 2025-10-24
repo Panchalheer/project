@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_messaging/firebase_messaging.dart'; // ✅ added
 
 import 'firebase_options.dart';
 import 'splash_screen.dart';
@@ -13,8 +12,8 @@ import 'restaurant/restaurant_home.dart';
 import 'restaurant/restaurant_profile.dart';
 import 'restaurant/restaurant_login.dart';
 import 'restaurant/restaurant_registration.dart';
-import 'restaurant/post_food_page.dart';
-import 'restaurant/my_posts_page.dart';
+
+
 
 // NGO pages
 import 'ngo/ngo_home.dart';
@@ -34,38 +33,11 @@ import 'settings/settings_page.dart';
 /// 🌙 Global theme controller
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
-/// ✅ Background message handler (required for FCM)
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint("🔔 Background message received: ${message.notification?.title}");
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // ✅ Initialize Firebase Messaging
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  // ✅ Request notification permissions (for iOS/web)
-  await messaging.requestPermission();
-
-  // ✅ Handle background messages
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // ✅ Get and print device token
-  String? token = await messaging.getToken();
-  debugPrint("📱 FCM Token: $token");
-
-  // ✅ Optional: Save token to Firestore if logged in NGO
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    await FirebaseFirestore.instance.collection('ngos').doc(user.uid).set({
-      'token': token,
-    }, SetOptions(merge: true));
-  }
 
   final prefs = await SharedPreferences.getInstance();
   final isDark = prefs.getBool('isDarkMode') ?? false;
@@ -147,8 +119,8 @@ class ZeroWasteApp extends StatelessWidget {
             '/restaurantHome': (context) => const RestaurantHomePage(),
             '/restaurantLogin': (context) => RestaurantLoginPage(),
             '/restaurantRegister': (context) => RestaurantRegistrationPage(),
-            '/postFood': (context) => const PostFoodPage(),
-            '/myPosts': (context) => const MyPostsPage(),
+
+
             '/restaurantProfile': (context) => RestaurantProfilePage(),
             '/settings': (context) => const SettingsPage(),
           },

@@ -61,7 +61,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     Navigator.pop(context);
   }
 
-  // 📄 Page Router
+  // 🔀 Route pages
   Widget _getPageContent() {
     switch (selectedMenu) {
       case "Dashboard":
@@ -75,7 +75,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
-  // 🌟 MAIN DASHBOARD
+  // 📊 MAIN DASHBOARD
   Widget _buildDashboard() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('restaurants').snapshots(),
@@ -109,8 +109,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-
-                  // 💠 Stats Cards
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -141,14 +139,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
                   const Text(
                     "Recent Activity",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
-
                   _buildRecentActivity(),
                 ],
               ),
@@ -159,7 +155,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // 📊 Stats Card (compact)
+  // 🧮 Dashboard Stat Cards
   Widget _buildStatCard(String title, int value, Color color, IconData icon) {
     return Container(
       width: MediaQuery.of(context).size.width / 2 - 24,
@@ -208,7 +204,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // 🕒 Recent Activity (with NGO/Restaurant names)
+  // 🕒 Recent Activity Log
   Widget _buildRecentActivity() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
@@ -220,7 +216,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Text("No recent activity yet.");
         }
@@ -270,7 +265,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // 🍴 RESTAURANT VERIFICATION (unchanged)
+  // 🍽 RESTAURANT VERIFICATION
   Widget _buildRestaurantVerification() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -309,13 +304,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
                 final filtered = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final name =
-                  (data['name'] ?? '').toString().toLowerCase();
+                  final name = (data['name'] ?? '').toString().toLowerCase();
                   final status = (data['status'] ?? 'Pending');
                   final matchesFilter = selectedRestaurantFilter == "All" ||
                       status == selectedRestaurantFilter;
-                  final matchesSearch = name
-                      .contains(_searchController.text.toLowerCase());
+                  final matchesSearch =
+                  name.contains(_searchController.text.toLowerCase());
                   return matchesFilter && matchesSearch;
                 }).toList();
 
@@ -341,7 +335,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Contact: ${data['contactPerson'] ?? 'N/A'}"),
+                            Text("License No: ${data['licenseNumber'] ?? 'N/A'}"),
                             Text("Email: ${data['email'] ?? 'N/A'}"),
                             Row(
                               children: [
@@ -361,13 +355,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               icon: const Icon(Icons.check,
                                   color: Colors.green),
                               onPressed: () => _updateStatus(
-                                  "restaurants", doc.id, "Approved", data['name']),
+                                  "restaurants",
+                                  doc.id,
+                                  "Approved",
+                                  data['name']),
                             ),
                             IconButton(
                               icon: const Icon(Icons.close,
                                   color: Colors.red),
                               onPressed: () => _updateStatus(
-                                  "restaurants", doc.id, "Rejected", data['name']),
+                                  "restaurants",
+                                  doc.id,
+                                  "Rejected",
+                                  data['name']),
                             ),
                           ],
                         )
@@ -384,7 +384,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // 🏢 NGO VERIFICATION (unchanged)
+  // 🏢 NGO VERIFICATION
   Widget _buildNgoVerification() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -423,8 +423,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
                 final filtered = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  final name =
-                  (data['name'] ?? '').toString().toLowerCase();
+                  final name = (data['name'] ?? '').toString().toLowerCase();
                   final status = (data['status'] ?? 'Pending');
                   final matchesFilter =
                       selectedNgoFilter == "All" || status == selectedNgoFilter;
@@ -450,12 +449,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       child: ListTile(
                         title: Text(data['name'] ?? 'Unnamed',
-                            style:
-                            const TextStyle(fontWeight: FontWeight.bold)),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold)),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Contact: ${data['contactPerson'] ?? 'N/A'}"),
+                            Text("Reg. Number: ${data['regNumber'] ?? 'N/A'}"),
                             Text("Email: ${data['email'] ?? 'N/A'}"),
                             Row(
                               children: [
@@ -475,13 +474,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               icon: const Icon(Icons.check,
                                   color: Colors.green),
                               onPressed: () => _updateStatus(
-                                  "ngos", doc.id, "Approved", data['name']),
+                                  "ngos",
+                                  doc.id,
+                                  "Approved",
+                                  data['name']),
                             ),
                             IconButton(
                               icon: const Icon(Icons.close,
                                   color: Colors.red),
                               onPressed: () => _updateStatus(
-                                  "ngos", doc.id, "Rejected", data['name']),
+                                  "ngos",
+                                  doc.id,
+                                  "Rejected",
+                                  data['name']),
                             ),
                           ],
                         )
@@ -515,6 +520,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     });
   }
 
+  // 🔘 Filter Chips
   Widget _buildRestaurantFilterChip(String label) => ChoiceChip(
     label: Text(label),
     selected: selectedRestaurantFilter == label,
@@ -539,7 +545,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         title: Text(selectedMenu),
-        backgroundColor: Colors.indigo,
+        backgroundColor: Colors.green, // ✅ Changed to green
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

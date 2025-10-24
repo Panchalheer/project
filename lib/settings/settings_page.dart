@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../main.dart' show themeNotifier;
 
-/// ✅ Settings Page
+/// ✅ SETTINGS PAGE
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -12,7 +12,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
   bool _darkMode = false;
 
   @override
@@ -24,7 +23,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _darkMode = prefs.getBool('isDarkMode') ?? false;
       themeNotifier.value = _darkMode ? ThemeMode.dark : ThemeMode.light;
     });
@@ -32,7 +30,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notificationsEnabled', _notificationsEnabled);
     await prefs.setBool('isDarkMode', _darkMode);
   }
 
@@ -45,28 +42,8 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(16.0),
         children: [
           const SizedBox(height: 10),
-          Text("Notifications",
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          Card(
-            color: theme.cardColor,
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            elevation: 5,
-            shadowColor: Colors.grey.withOpacity(0.3),
-            child: SwitchListTile(
-              title: const Text("Enable Notifications"),
-              subtitle: const Text("Get alerts for new messages and updates"),
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() => _notificationsEnabled = value);
-                _saveSettings();
-              },
-              secondary:
-              Icon(Icons.notifications_active, color: theme.iconTheme.color),
-            ),
-          ),
-          const SizedBox(height: 20),
+
+          // Dark Mode
           Text("App Appearance",
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
@@ -82,14 +59,16 @@ class _SettingsPageState extends State<SettingsPage> {
               value: _darkMode,
               onChanged: (value) {
                 setState(() => _darkMode = value);
-                themeNotifier.value =
-                value ? ThemeMode.dark : ThemeMode.light;
+                themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
                 _saveSettings();
               },
               secondary: Icon(Icons.dark_mode, color: theme.iconTheme.color),
             ),
           ),
+
           const SizedBox(height: 20),
+
+          // Help & Support
           Text("Help & Support",
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold)),
@@ -112,8 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading:
-                  Icon(Icons.support_agent, color: theme.iconTheme.color),
+                  leading: Icon(Icons.support_agent, color: theme.iconTheme.color),
                   title: const Text("Contact Support"),
                   subtitle: const Text("Chat or email our support team"),
                   onTap: () {
@@ -135,6 +113,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+
           const SizedBox(height: 30),
           Center(
             child: Text("ZeroWaste v1.0.0",
@@ -149,6 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
 /// ❓ FAQ PAGE
 class FAQPage extends StatelessWidget {
   const FAQPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -199,6 +179,7 @@ class FAQPage extends StatelessWidget {
 /// 💬 FEEDBACK PAGE
 class FeedbackPage extends StatefulWidget {
   const FeedbackPage({super.key});
+
   @override
   State<FeedbackPage> createState() => _FeedbackPageState();
 }
@@ -257,10 +238,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: Colors.white,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ],
@@ -273,6 +252,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
 /// 📞 SUPPORT PAGE
 class SupportPage extends StatelessWidget {
   const SupportPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -285,8 +265,7 @@ class SupportPage extends StatelessWidget {
             CircleAvatar(
               radius: 60,
               backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
-              child: Icon(Icons.support_agent,
-                  size: 60, color: theme.colorScheme.primary),
+              child: Icon(Icons.support_agent, size: 60, color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 20),
             Text("Need Assistance?",
@@ -298,8 +277,7 @@ class SupportPage extends StatelessWidget {
                 textAlign: TextAlign.center),
             const SizedBox(height: 25),
             Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 3,
               child: Column(
                 children: [
@@ -310,8 +288,7 @@ class SupportPage extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading:
-                    Icon(Icons.chat_bubble_outline, color: theme.iconTheme.color),
+                    leading: Icon(Icons.chat_bubble_outline, color: theme.iconTheme.color),
                     title: const Text("Live Chat"),
                     subtitle: const Text("Coming soon..."),
                   ),

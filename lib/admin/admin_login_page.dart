@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'admin_dashboard.dart'; // your admin dashboard file
 
 class AdminLoginPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isLoading = false;
   String _errorMessage = '';
+  bool _obscurePassword = true;
 
   Future<void> _loginAdmin() async {
     setState(() {
@@ -24,13 +26,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     });
 
     try {
-      // 1️⃣ Sign in using Firebase Authentication
+      // 🔹 Sign in
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // 2️⃣ Fetch user data from Firestore
+      // 🔹 Fetch role from Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -38,8 +40,6 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
       if (userDoc.exists) {
         final userData = userDoc.data() as Map<String, dynamic>;
-
-        // 3️⃣ Check if the role is 'admin'
         if (userData['role'] == 'admin') {
           Navigator.pushReplacement(
             context,
@@ -74,46 +74,139 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+      backgroundColor: Colors.grey[100],
+      body: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(25.0),
+            child: Container(
+              padding: const EdgeInsets.all(25),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.admin_panel_settings_rounded,
+                    color: Color(0xFF1B5E20),
+                    size: 70,
                   ),
-                ),
-                const SizedBox(height: 20),
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                  onPressed: _loginAdmin,
-                  child: const Text('Login as Admin'),
-                ),
-                const SizedBox(height: 15),
-                if (_errorMessage.isNotEmpty)
+                  const SizedBox(height: 10),
                   Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
+                    "Admin Login",
+                    style: GoogleFonts.poppins(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1B5E20),
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 30),
+
+                  // ✉️ Email Field
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.email_outlined,
+                          color: Color(0xFF1B5E20)),
+                      labelText: 'Email',
+                      labelStyle:
+                      const TextStyle(color: Color(0xFF1B5E20)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1B5E20), width: 1.5),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 🔒 Password Field
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock_outline,
+                          color: Color(0xFF1B5E20)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: const Color(0xFF1B5E20),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                      labelText: 'Password',
+                      labelStyle:
+                      const TextStyle(color: Color(0xFF1B5E20)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1B5E20), width: 1.5),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // 🔘 Login Button
+                  _isLoading
+                      ? const CircularProgressIndicator(
+                      color: Color(0xFF1B5E20))
+                      : SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B5E20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      onPressed: _loginAdmin,
+                      child: Text(
+                        'Login as Admin',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ⚠️ Error Message
+                  if (_errorMessage.isNotEmpty)
+                    Text(
+                      _errorMessage,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                ],
+              ),
             ),
           ),
         ),

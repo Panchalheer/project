@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ✅ Import Settings Page
 import '../settings/settings_page.dart';
@@ -23,76 +23,20 @@ class _NgoHomePageState extends State<NgoHomePage> {
   int _currentIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    saveFcmToken();
-    setupFirebaseMessagingListeners();
-  }
-
-  /// ✅ Save the current user's FCM token to Firestore
-  Future<void> saveFcmToken() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      final fcmToken = await FirebaseMessaging.instance.getToken();
-      if (fcmToken != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'fcmToken': fcmToken});
-        debugPrint('✅ FCM Token saved for NGO: $fcmToken');
-      }
-
-      // Handle token refresh
-      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'fcmToken': newToken});
-        debugPrint('🔁 Token refreshed and updated for NGO');
-      });
-    } catch (e) {
-      debugPrint('❌ Error saving FCM token: $e');
-    }
-  }
-
-  /// 🔔 Listen for incoming push notifications
-  void setupFirebaseMessagingListeners() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notification = message.notification;
-      if (notification != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${notification.title ?? "New Notification"}: ${notification.body ?? ""}',
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    });
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      final postId = message.data['postId'];
-      debugPrint('🔔 NGO opened notification for post ID: $postId');
-      // TODO: Navigate to post details if needed
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final String uid = FirebaseAuth.instance.currentUser?.uid ?? "";
+
     return DefaultTabController(
       length: 3,
       initialIndex: _currentIndex,
       child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.white,
           title: Row(
-            children: const [
-              Text(
+            children: [
+              const Text(
                 "Zero",
                 style: TextStyle(
                   color: Colors.black,
@@ -100,12 +44,27 @@ class _NgoHomePageState extends State<NgoHomePage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
+              const Text(
                 "Waste",
                 style: TextStyle(
                   color: Colors.green,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  "Reduce Food Waste, Save the Planet 🌍",
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.color
+                        ?.withOpacity(0.7),
+                  ),
                 ),
               ),
             ],
@@ -122,23 +81,11 @@ class _NgoHomePageState extends State<NgoHomePage> {
               },
             ),
 
-            // 🔔 Notifications Button
-            IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.black87),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🔔 Notifications are automatically received!'),
-                  ),
-                );
-              },
-            ),
-
             // 👤 Profile Avatar (AppBar)
             StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('ngos')
-                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .doc(uid)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -210,7 +157,7 @@ class _NgoHomePageState extends State<NgoHomePage> {
           children: [
             NgoDashboardPage(),
             NgoListingsPage(),
-            HistoryPage(),
+            NgoHistoryPage(),
           ],
         ),
       ),
