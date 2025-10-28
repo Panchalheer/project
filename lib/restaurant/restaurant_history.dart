@@ -1,3 +1,4 @@
+// lib/restaurant/restaurant_history.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,6 +44,26 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
     }
   }
 
+  /// Extract NGO name safely (handles both top-level and nested cases)
+  String getNgoName(Map<String, dynamic> data) {
+    // Case 1: top-level NGO name
+    if (data['ngoName'] != null && data['ngoName'].toString().isNotEmpty) {
+      return data['ngoName'];
+    }
+
+    // Case 2: nested inside pendingRequests[0]
+    if (data['pendingRequests'] != null &&
+        data['pendingRequests'] is List &&
+        (data['pendingRequests'] as List).isNotEmpty) {
+      final firstReq = (data['pendingRequests'] as List).first;
+      if (firstReq is Map && firstReq['ngoName'] != null) {
+        return firstReq['ngoName'];
+      }
+    }
+
+    return "Unknown NGO";
+  }
+
   @override
   Widget build(BuildContext context) {
     String? currentMonth;
@@ -83,17 +104,21 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
           }
 
           final donations = snapshot.data!.docs;
-          print("✅ Found ${donations.length} donations for restaurantId: $restaurantId");
+          print(
+              "✅ Found ${donations.length} donations for restaurantId: $restaurantId");
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
             itemCount: donations.length,
             itemBuilder: (context, index) {
-              final data = donations[index].data() as Map<String, dynamic>;
+              final data =
+              donations[index].data() as Map<String, dynamic>;
 
-              final pickupTime = (data['pickupTime'] as Timestamp?)?.toDate();
-              final ngoName = data['ngoName'] ?? "Unknown NGO";
-              final restaurantName = data['restaurantName'] ?? "Unknown Restaurant";
+              final pickupTime =
+              (data['pickupTime'] as Timestamp?)?.toDate();
+              final ngoName = getNgoName(data);
+              final restaurantName =
+                  data['restaurantName'] ?? "Unknown Restaurant";
               final title = data['title'] ?? "Unnamed Item";
               final quantity = data['quantity'] ?? 0;
               final unit = data['unit'] ?? "";
@@ -137,7 +162,8 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
                           ),
                           Container(
                             width: 2,
-                            height: index == donations.length - 1 ? 0 : 80,
+                            height:
+                            index == donations.length - 1 ? 0 : 80,
                             color: Colors.grey[300],
                           ),
                         ],
@@ -146,7 +172,8 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
                       // Donation Card
                       Expanded(
                         child: Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          margin:
+                          const EdgeInsets.symmetric(vertical: 8),
                           elevation: 2,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -154,7 +181,8 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
                           child: Padding(
                             padding: const EdgeInsets.all(12),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   DateFormat('dd MMM, hh:mm a')
@@ -174,7 +202,8 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
                                 ),
                                 const SizedBox(height: 6),
                                 Chip(
-                                  label: Text("$title ($quantity $unit)"),
+                                  label:
+                                  Text("$title ($quantity $unit)"),
                                   backgroundColor: Colors.green[50],
                                 ),
                                 const SizedBox(height: 6),
@@ -187,7 +216,8 @@ class _RestaurantHistoryPageState extends State<RestaurantHistoryPage> {
                                 ),
                                 if (description.isNotEmpty)
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 4),
+                                    padding:
+                                    const EdgeInsets.only(top: 4),
                                     child: Text(
                                       "Notes: $description",
                                       style: const TextStyle(

@@ -181,14 +181,7 @@ class _RestaurantHomePageState extends State<RestaurantHomePage> {
                 MaterialPageRoute(builder: (_) => const AddListingPage()),
               ),
             ),
-            SpeedDialChild(
-              backgroundColor: Color(0xFFA5D6A7),
-              child: const Icon(Icons.bar_chart),
-              label: 'Analytics',
-              onTap: () {
-                // TODO: Open analytics page
-              },
-            ),
+
           ],
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

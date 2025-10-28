@@ -67,7 +67,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Stats Calculation
+  // 🔹 Dashboard Stats
   Future<Map<String, dynamic>> _fetchDashboardStats(String uid) async {
     final snapshot = await FirebaseFirestore.instance
         .collection("listings")
@@ -119,7 +119,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     };
   }
 
-  // 🔹 Stat Card Widget
+  // 🔹 Stat Card
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Card(
@@ -156,7 +156,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Section Title Widget
+  // 🔹 Section Title
   Widget _buildSectionTitle(String title, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -177,7 +177,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Regular Listings (Active/Completed)
+  // 🔹 Active/Completed Listings Stream
   Widget _buildListingsStream({required String uid, required String status}) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -228,8 +228,6 @@ class RestaurantDashboardPage extends StatelessWidget {
                   ),
                   backgroundColor: status == "Active"
                       ? Colors.green
-                      : status == "Pending"
-                      ? Colors.orange
                       : Colors.blue,
                 ),
               ),
@@ -240,7 +238,7 @@ class RestaurantDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔹 Pending Requests (from subfield)
+  // 🔹 Pending Requests Stream (with fixed logic)
   Widget _buildPendingRequestsStream(String uid) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -285,8 +283,7 @@ class RestaurantDashboardPage extends StatelessWidget {
             return Column(
               children: activeRequests.map((req) {
                 return Card(
-                  margin:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 3,
@@ -298,8 +295,7 @@ class RestaurantDashboardPage extends StatelessWidget {
                     ),
                     title: Text(
                       "${req['ngoName']} requested ${req['requestedQuantity']} ${data['unit']}",
-                      style:
-                      GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                     ),
                     subtitle: Text(data['title'] ?? "Food Item",
                         style: GoogleFonts.poppins(fontSize: 13)),
@@ -318,32 +314,32 @@ class RestaurantDashboardPage extends StatelessWidget {
                         final updatedRequests =
                         List<Map<String, dynamic>>.from(pendingList);
 
-                        // 🔹 Mark this specific NGO request as completed
+                        // 🔹 Mark this NGO request completed
                         final indexToUpdate = updatedRequests
                             .indexWhere((r) => r['ngoId'] == req['ngoId']);
                         if (indexToUpdate != -1) {
                           updatedRequests[indexToUpdate]['status'] = "Completed";
                         }
 
-                        // 🔹 Check if all requests are completed
-                        final allCompleted = updatedRequests
-                            .every((r) => r['status'] == "Completed");
+                        // 🔹 Calculate new remaining quantity
+                        final totalRequested = updatedRequests.fold<num>(
+                          0,
+                              (sum, r) => sum + (r['status'] == "Completed"
+                              ? (r['requestedQuantity'] ?? 0)
+                              : 0),
+                        );
+                        final totalQuantity = (data['quantity'] ?? 0) as num;
+                        final remaining = (totalQuantity - totalRequested).clamp(0, totalQuantity);
 
-                        final remainingQty =
-                        (data['remainingQuantity'] ?? data['quantity']) as num;
+                        // 🔹 Determine status
+                        final newStatus =
+                        remaining == 0 ? "Completed" : "Active";
 
-                        // 🔹 Determine new listing status
-                        final newStatus = (allCompleted && remainingQty <= 0)
-                            ? "Completed"
-                            : "Active";
-
-                        // 🔹 Clear pendingRequests if all are completed
                         await listingRef.update({
-                          "pendingRequests": updatedRequests, // ← keep all, just update statuses
+                          "pendingRequests": updatedRequests,
+                          "remainingQuantity": remaining,
                           "status": newStatus,
-                          "remainingQuantity": 0, // optional, only if fully picked up
                         });
-
                       },
                       child: const Text("Complete"),
                     ),

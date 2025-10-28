@@ -149,7 +149,6 @@ class _NgoHomePageState extends State<NgoHomePage> {
             tabs: const [
               Tab(text: 'Dashboard'),
               Tab(text: 'Listings'),
-              Tab(text: 'History'),
             ],
           ),
         ),
